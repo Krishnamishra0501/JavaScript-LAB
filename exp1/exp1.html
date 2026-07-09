@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Methods Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #0078d7;
+        }
+
+        p {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Welcome!</h1>
+    <p>Open your browser's Developer Console (F12 → Console) to see environment information.</p>
+</div>
+
+<script>
+    // Welcome message
+    console.log("Welcome to the Console Methods Demo!");
+
+    // User environment information
+    const environment = {
+        Browser: navigator.userAgent,
+        Language: navigator.language,
+        Platform: navigator.platform,
+        Online: navigator.onLine,
+        CookiesEnabled: navigator.cookieEnabled,
+        ScreenResolution: `${screen.width} x ${screen.height}`,
+        WindowSize: `${window.innerWidth} x ${window.innerHeight}`,
+        CurrentURL: window.location.href
+    };
+
+    // Display as a table
+    console.table(environment);
+
+    // Informational message
+    console.log("Environment details logged successfully.");
+
+    // Warning example
+    console.warn("This is a sample warning message.");
+
+    // Error example
+    console.error("This is a sample error message.");
+
+    // Stack trace example
+    function showTrace() {
+        console.trace("Function call trace:");
+    }
+
+    showTrace();
+</script>
+
+</body>
+</html>
