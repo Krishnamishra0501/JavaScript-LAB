@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Palindrome Checker</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #f0f2f5; }
+        .card { max-width: 450px; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        button { width: 100%; padding: 12px; background: #1877f2; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 5px; }
+        button:hover { background: #166fe5; }
+        .error { color: #d93025; background: #fce8e6; padding: 10px; border-radius: 5px; margin-top: 10px; display: none; }
+        .success { color: #137333; background: #e6f4ea; padding: 10px; border-radius: 5px; margin-top: 10px; display: none; }
+        .history { margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+        ul { padding-left: 20px; color: #5f6368; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Palindrome Checker</h2>
+    <div class="form-group">
+        <label for="textInput">Enter Text to Check:</label>
+        <input type="text" id="textInput" placeholder="e.g., Racecar or Madam, I'm Adam">
+        <button id="checkBtn">Verify Text</button>
+    </div>
+
+    <!-- Feedback Containers -->
+    <div id="errorBox" class="error"></div>
+    <div id="successBox" class="success"></div>
+
+    <!-- Closure History Display -->
+    <div class="history">
+        <h3>Session History (via Closure)</h3>
+        <ul id="historyList"></ul>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// 1. FUNCTION TYPES, SCOPE, AND CLOSURES
+// ==========================================
+
+// Create a Closure to manage checker state (history log) privately
+const createPalindromeTracker = () => {
+    // Private variables (Lexical Scope)
+    const historyLog = [];
+
+    // Inner function (The Closure) that retains access to historyLog
+    return (text, isPalindrome) => {
+        const timestamp = new Date().toLocaleTimeString();
+        const entry = `[${timestamp}] "${text}" -> ${isPalindrome ? '✅ Yes' : '❌ No'}`;
+        
+        historyLog.push(entry);
+        return [...historyLog]; // Returns copy to prevent outside mutation
+    };
+};
+
+// Initialize the closure instance
+const trackSession = createPalindromeTracker();
+
+
+// Arrow Function Type for explicit data normalization and core logic
+const checkPalindromeLogic = (str) => {
+    // Regular Expression to remove all non-alphanumeric characters and force lowercase
+    const cleanStr = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // Core structural check
+    const reversedStr = cleanStr.split('').reverse().join('');
+    return cleanStr === reversedStr;
+};
+
+
+// ==========================================
+// 2. ERROR HANDLING (TRY-CATCH) AND UI
+// ==========================================
+
+document.getElementById('checkBtn').addEventListener('click', () => {
+    const inputField = document.getElementById('textInput');
+    const rawValue = inputField.value;
+    
+    const errorBox = document.getElementById('errorBox');
+    const successBox = document.getElementById('successBox');
+    const historyList = document.getElementById('historyList');
+
+    // Reset UI states
+    errorBox.style.display = 'none';
+    successBox.style.display = 'none';
+
+    try {
+        // Validation Layer: Guard clauses throwing errors into the catch block
+        if (!rawValue || rawValue.trim() === "") {
+            throw new Error("Input cannot be empty. Please type something.");
+        }
+        if (rawValue.length < 2) {
+            throw new Error("Please enter a text of at least 2 characters.");
+        }
+
+        // Logic Layer
+        const result = checkPalindromeLogic(rawValue);
+
+        // Display Result
+        successBox.textContent = result 
+            ? `"${rawValue}" is a valid palindrome!` 
+            : `"${rawValue}" is NOT a palindrome.`;
+        successBox.style.display = 'block';
+
+        // State Layer: Push data into closure state and fetch updated history array
+        const currentHistory = trackSession(rawValue, result);
+
+        // Render History UI
+        historyList.innerHTML = currentHistory
+            .map(item => `<li>${item}</li>`)
+            .join('');
+
+        // Clear input field on success
+        inputField.value = '';
+
+    } catch (error) {
+        // UI Error Interception
+        errorBox.textContent = error.message;
+        errorBox.style.display = 'block';
+    }
+});
+</script>
+
+</body>
+</html>
