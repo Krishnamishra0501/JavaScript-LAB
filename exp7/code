@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOM Traversal To-Do App</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 40px; background: #f8fafc; color: #334155; }
+        .app-container { max-width: 500px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
+        .counter-badge { font-size: 14px; background: #e2e8f0; padding: 4px 10px; border-radius: 12px; color: #475569; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; }
+        input[type="text"]:focus { outline: 2px solid #3b82f6; outline-offset: -1px; }
+        button { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: background 0.2s; }
+        .btn-add { background: #2563eb; color: white; }
+        .btn-add:hover { background: #1d4ed8; }
+        .todo-list { list-style: none; padding: 0; margin: 0; }
+        .todo-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px; }
+        .todo-item.completed .task-text { text-decoration: line-through; color: #94a3b8; }
+        .task-content { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .edit-input { width: 90%; padding: 6px; font-size: 15px; border: 1px solid #3b82f6; border-radius: 4px; }
+        .actions { display: flex; gap: 6px; }
+        .btn-edit { background: #e2e8f0; color: #334155; }
+        .btn-edit:hover { background: #cbd5e1; }
+        .btn-save { background: #16a34a; color: white; }
+        .btn-save:hover { background: #15803d; }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-delete:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h2>
+        Task Manager 
+        <span id="taskCounter" class="counter-badge">Total Tasks: 0</span>
+    </h2>
+    
+    <!-- Input Form Area -->
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Add a new task assignment...">
+        <button id="addTaskBtn" class="btn-add">Add</button>
+    </div>
+
+    <!-- Target Container for DOM manipulation -->
+    <ul id="todoList" class="todo-list"></ul>
+</div>
+
+<script>
+// ==========================================
+// 1. CORE DOM SELECTION
+// ==========================================
+const taskInput = document.getElementById('taskInput');
+const addTaskBtn = document.getElementById('addTaskBtn');
+const todoList = document.getElementById('todoList');
+const taskCounter = document.getElementById('taskCounter');
+
+// ==========================================
+// 2. HELPER METRIC UPDATE STATE
+// ==========================================
+const updateTaskCount = () => {
+    // Traverse the child element node count natively
+    const totalItems = todoList.children.length;
+    taskCounter.textContent = `Total Tasks: ${totalItems}`;
+};
+
+// ==========================================
+// 3. TASK CREATION NODE FACTORY
+// ==========================================
+const createTaskNode = (taskText) => {
+    // Create base wrapper element shell
+    const li = document.createElement('li');
+    li.className = 'todo-item';
+
+    // Inject functional internal element structure map blueprint
+    li.innerHTML = `
+        <div class="task-content">
+            <input type="checkbox" class="complete-checkbox">
+            <span class="task-text">${taskText}</span>
+        </div>
+        <div class="actions">
+            <button class="btn-edit">Edit</button>
+            <button class="btn-delete">Delete</button>
+        </div>
+    `;
+
+    return li;
+};
+
+// ==========================================
+// 4. ACTION CONTROLLERS & FORM SUBMIT
+// ==========================================
+const handleAddTask = () => {
+    const text = taskInput.value.trim();
+    if (text === "") return;
+
+    const newTaskNode = createTaskNode(text);
+    
+    // DOM Mutation: Append child directly to container end boundary
+    todoList.appendChild(newTaskNode);
+    taskInput.value = "";
+    updateTaskCount();
+};
+
+addTaskBtn.addEventListener('click', handleAddTask);
+taskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleAddTask(); });
+
+// ==========================================
+// 5. EVENT DELEGATION & DOM TRAVERSAL ENGINE
+// ==========================================
+todoList.addEventListener('click', (event) => {
+    const targetElement = event.target;
+
+    // --- Action Variant A: Delete Flow ---
+    if (targetElement.classList.contains('btn-delete')) {
+        // Traversal: Find the closest parent structural container tag boundary
+        const targetRow = targetElement.closest('.todo-item');
+        
+        // Mutation removal step execution
+        targetRow.remove();
+        updateTaskCount();
+    }
+
+    // --- Action Variant B: Checkbox Toggle ---
+    if (targetElement.classList.contains('complete-checkbox')) {
+        const targetRow = targetElement.closest('.todo-item');
+        
+        // Update styling properties node lists toggles dynamically
+        targetRow.classList.toggle('completed', targetElement.checked);
+    }
+
+    // --- Action Variant C: Inline Edit Mode Conversion ---
+    if (targetElement.classList.contains('btn-edit')) {
+        const targetRow = targetElement.closest('.todo-item');
+        
+        // Traversal path querying relative children downward trees 
+        const textSpan = targetRow.querySelector('.task-text');
+        const currentTextValue = textSpan.textContent;
+
+        // Construct input buffer workspace inline dynamically
+        const editField = document.createElement('input');
+        editField.type = 'text';
+        editField.className = 'edit-input';
+        editField.value = currentTextValue;
+
+        // Traversal mutation replace step: swaps out the plain text for an editable input box
+        const contentContainer = targetRow.querySelector('.task-content');
+        contentContainer.replaceChild(editField, textSpan);
+
+        // Convert the button type appearance layout tracking maps
+        targetElement.textContent = 'Save';
+        targetElement.className = 'btn-save';
+    }
+    
+    // --- Action Variant D: Save Edited Block ---
+    else if (targetElement.classList.contains('btn-save')) {
+        const targetRow = targetElement.closest('.todo-item');
+        const editField = targetRow.querySelector('.edit-input');
+        const updatedTextValue = editField.value.trim();
+
+        if (updatedTextValue === "") return;
+
+        // Create standard default markup element node tracking layer
+        const restoredSpan = document.createElement('span');
+        restoredSpan.className = 'task-text';
+        restoredSpan.textContent = updatedTextValue;
+
+        // Traversal modification step back substitution
+        const contentContainer = targetRow.querySelector('.task-content');
+        contentContainer.replaceChild(restoredSpan, editField);
+
+        // Revert controller properties maps updates tracking nodes elements
+        targetElement.textContent = 'Edit';
+        targetElement.className = 'btn-edit';
+    }
+});
+</script>
+
+</body>
+</html>
