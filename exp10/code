@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic JSON Table Loader</title>
+    <!-- Include jQuery via CDN -->
+    <script src="https://jquery.com"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .controls { margin-bottom: 20px; }
+        button { padding: 10px 15px; margin-right: 10px; cursor: pointer; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .status-msg { font-style: italic; color: #666; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Dynamic Data Tables</h2>
+    
+    <div class="controls">
+        <button id="btnFetch">Load with Native Fetch()</button>
+        <button id="btnJquery">Load with jQuery $.getJSON()</button>
+    </div>
+
+    <div id="status" class="status-msg">Click a button to load data...</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Company</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Dynamic rows will be inserted here -->
+        </tbody>
+    </table>
+
+    <script>
+        const apiEndpoint = 'https://typicode.com';
+        const $tableBody = $('#tableBody');
+        const $status = $('#status');
+
+        // --- METHOD 1: Native JavaScript Fetch API ---
+        function loadWithFetch() {
+            $tableBody.empty(); // Clear existing rows
+            $status.text('Loading via Fetch API...');
+
+            fetch(apiEndpoint)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json(); // Parse text body to JSON object
+                })
+                .then(data => {
+                    renderTable(data);
+                    $status.text('Data successfully loaded using native Fetch API.');
+                })
+                .catch(error => {
+                    $status.text(`Fetch Error: ${error.message}`);
+                    console.error('Fetch error:', error);
+                });
+        }
+
+        // --- METHOD 2: jQuery $.getJSON() Helper ---
+        function loadWithJQuery() {
+            $tableBody.empty(); // Clear existing rows
+            $status.text('Loading via jQuery $.getJSON()...');
+
+            // Automatically makes an AJAX GET request and parses the JSON response
+            $.getJSON(apiEndpoint, function(data) {
+                renderTable(data);
+                $status.text('Data successfully loaded using jQuery $.getJSON().');
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                $status.text(`jQuery Error: ${textStatus}`);
+                console.error('jQuery error:', errorThrown);
+            });
+        }
+
+        // --- Shared Rendering Function ---
+        function renderTable(users) {
+            let rowsHtml = '';
+
+            // Loop through the data array to construct table rows
+            users.forEach(user => {
+                rowsHtml += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.name}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>${user.company.name}</td>
+                    </tr>
+                `;
+            });
+
+            // Inject the constructed rows into the DOM
+            $tableBody.html(rowsHtml);
+        }
+
+        // Bind click events to buttons
+        $('#btnFetch').on('click', loadWithFetch);
+        $('#btnJquery').on('click', loadWithJQuery);
+    </script>
+
+</body>
+</html>
