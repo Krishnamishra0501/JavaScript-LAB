@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart Calculator</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 40px; background: #f8f9fa; color: #212529; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; max-width: 900px; margin: 0 auto; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .badge { background: #e9ecef; padding: 3px 8px; border-radius: 12px; font-size: 14px; }
+        .btn-remove { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-remove:hover { background: #bd2130; }
+        .form-group { margin-top: 15px; display: flex; gap: 10px; }
+        input, select { flex: 1; padding: 8px; border: 1px solid #ced4da; border-radius: 4px; }
+        button.action-btn { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        button.action-btn:hover { background: #218838; }
+        .summary-row { display: flex; justify-content: space-between; margin: 12px 0; font-size: 16px; }
+        .total-row { font-size: 20px; font-weight: bold; border-top: 2px dashed #dee2e6; padding-top: 12px; color: #007bff; }
+        .alert { color: #856404; background-color: #fff3cd; padding: 8px; border-radius: 4px; font-size: 14px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="grid">
+    <!-- Left: Cart Items & Add Form -->
+    <div class="card">
+        <h2>Your Cart Inventory</h2>
+        <div id="cartItemsContainer"><!-- Dynamic Items injected here --></div>
+        
+        <form id="addItemForm" style="margin-top: 20px;">
+            <h3>Add New Product</h3>
+            <div class="form-group">
+                <input type="text" id="prodName" placeholder="Item Name" required>
+                <input type="number" id="prodPrice" placeholder="Price (₹)" min="1" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <input type="number" id="prodQty" placeholder="Quantity" min="1" value="1" required>
+                <button type="submit" class="action-btn">Add to Cart</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right: Calculation Summary & Coupons -->
+    <div class="card">
+        <h2>Checkout Summary</h2>
+        <div class="summary-row"><span>Items Count:</span><span id="totalItems">0</span></div>
+        <div class="summary-row"><span>Subtotal:</span><span id="subtotalPrice">₹0.00</span></div>
+        <div class="summary-row"><span>Tax (18% GST):</span><span id="taxAmount">₹0.00</span></div>
+        
+        <div class="form-group">
+            <input type="text" id="couponInput" placeholder="Enter Coupon (SAVE10, BUNDLE20)">
+            <button id="applyCouponBtn" class="action-btn" style="background:#007bff">Apply</button>
+        </div>
+        <div id="couponFeedback" class="alert"></div>
+
+        <div class="summary-row total-row"><span>Grand Total:</span><span id="grandTotal">₹0.00</span></div>
+    </div>
+</div>
+
+<script>
+// ==========================================
+// 1. DATA STRUCTURES (OBJECTS & ARRAYS)
+// ==========================================
+
+// Initial Cart Array containing product objects
+let cart = [
+    { id: 1, name: "Wireless Mouse", price: 1200, quantity: 2 },
+    { id: 2, name: "Mechanical Keyboard", price: 4500, quantity: 1 },
+    { id: 3, name: "USB-C Hub", price: 800, quantity: 3 }
+];
+
+// Coupon Lookup Dictionary Object (Key-Value pairing)
+const couponRegistry = {
+    "SAVE10": { type: "percentage", value: 10 },
+    "BUNDLE20": { type: "percentage", value: 20 },
+    "FLAT500": { type: "fixed", value: 500 }
+};
+
+let activeCoupon = null;
+
+// ==========================================
+// 2. CORE PROCESSING LOGIC (ARRAY METHODS)
+// ==========================================
+
+const calculateCartMetrics = () => {
+    // Array Method 1: .reduce() to aggregate total units counts
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Array Method 2: .reduce() to accurately calculate subtotal values
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Apply active coupon data structures logic 
+    let discountAmount = 0;
+    if (activeCoupon && couponRegistry[activeCoupon]) {
+        const promo = couponRegistry[activeCoupon];
+        if (promo.type === "percentage") {
+            discountAmount = subtotal * (promo.value / 100);
+        } else if (promo.type === "fixed") {
+            discountAmount = Math.min(promo.value, subtotal); // Ensure discount won't exceed subtotal
+        }
+    }
+
+    const netSubtotal = subtotal - discountAmount;
+    const taxRate = 0.18; // 18% GST
+    const tax = netSubtotal * taxRate;
+    const grandTotal = netSubtotal + tax;
+
+    return { totalItems, subtotal, tax, grandTotal };
+};
+
+// ==========================================
+// 3. UI RENDERING LAYER
+// ==========================================
+
+const renderCart = () => {
+    const container = document.getElementById('cartItemsContainer');
+    
+    if (cart.length === 0) {
+        container.innerHTML = `<p style="color:#6c757d; font-style:italic;">Your cart is currently empty.</p>`;
+    } else {
+        // Array Method 3: .map() to transform array data objects into raw HTML strings
+        container.innerHTML = cart.map(item => `
+            <div class="item-row">
+                <div>
+                    <strong>${item.name}</strong> <br>
+                    <small style="color:#6c757d">₹${item.price.toFixed(2)} each</small>
+                </div>
+                <div>
+                    <span class="badge">Qty: ${item.quantity}</span>
+                    <button class="btn-remove" onclick="removeItem(${item.id})">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Refresh pricing metrics summary panel
+    const metrics = calculateCartMetrics();
+    document.getElementById('totalItems').textContent = metrics.totalItems;
+    document.getElementById('subtotalPrice').textContent = `₹${metrics.subtotal.toFixed(2)}`;
+    document.getElementById('taxAmount').textContent = `₹${metrics.tax.toFixed(2)}`;
+    document.getElementById('grandTotal').textContent = `₹${metrics.grandTotal.toFixed(2)}`;
+};
+
+// ==========================================
+// 4. CART MUTATION OPERATIONS
+// ==========================================
+
+// Add Product via Form submission
+document.getElementById('addItemForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('prodName').value.trim();
+    const price = parseFloat(document.getElementById('prodPrice').value);
+    const quantity = parseInt(document.getElementById('prodQty').value);
+
+    // Dynamic Object Construction & push operation
+    const newProduct = {
+        id: Date.now(), // Generate a unique timestamp ID
+        name,
+        price,
+        quantity
+    };
+
+    cart.push(newProduct);
+    document.getElementById('addItemForm').reset();
+    document.getElementById('prodQty').value = 1; // Reset back to default
+    renderCart();
+});
+
+// Remove item using filter array methodology
+window.removeItem = (productId) => {
+    // Array Method 4: .filter() to purge targeted entities out of the core array
+    cart = cart.filter(item => item.id !== productId);
+    renderCart();
+};
+
+// Apply Coupon validation structure
+document.getElementById('applyCouponBtn').addEventListener('click', () => {
+    const inputCode = document.getElementById('couponInput').value.trim().toUpperCase();
+    const feedbackBox = document.getElementById('couponFeedback');
+    
+    feedbackBox.style.display = "block";
+
+    // Object Handling: Direct structural check if property exists in registry
+    if (inputCode in couponRegistry) {
+        activeCoupon = inputCode;
+        feedbackBox.style.backgroundColor = "#d4edda";
+        feedbackBox.style.color = "#155724";
+        feedbackBox.textContent = `Coupon "${inputCode}" successfully activated!`;
+    } else {
+        activeCoupon = null;
+        feedbackBox.style.backgroundColor = "#f8d7da";
+        feedbackBox.style.color = "#721c24";
+        feedbackBox.textContent = "Invalid promo coupon code structural format.";
+    }
+    renderCart();
+});
+
+// Initial boot invocation
+renderCart();
+</script>
+
+</body>
+</html>
